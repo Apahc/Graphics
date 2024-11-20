@@ -1,0 +1,166 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <title>Интерактивная Визуализация Гипоциклоиды</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        canvas {
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <form id="form">
+        <input type="text" name="R" placeholder="R" id="R">
+        <input type="text" name="r" placeholder="r" id="r">
+        <input type="text" name="h" placeholder="h" id="h">
+        <input type="button" onclick="start()" value="Пуск">
+        <input type="button" onclick="stop()" value="Стоп">
+        <input type="button" onclick="toggleGrid()" value="Показать/Скрыть Сетку">
+        <input type="button" onclick="zoomIn()" value="Увеличить">
+        <input type="button" onclick="zoomOut()" value="Уменьшить">
+    </form>
+    
+    <canvas id="canvas" width="600" height="600"></canvas>
+    <script>
+        var cnv = document.getElementById('canvas').getContext('2d');
+        var Idint;
+        var m = 0;
+        var R = 0;
+        var r = 0;
+        var h = 0;
+        var ct = 0;
+        var cx = 0;
+        var cy = 0;
+        var timer = 0;
+        var t = 0; 
+        var dt = 0;
+        var x = 0; 
+        var y = 0;
+        var point_t = 0;
+        var gridVisible = true;  // Сетка видима по умолчанию
+        var scale = 25;  // Масштаб по умолчанию
+
+        function start() {
+            R = parseFloat(document.getElementById("R").value);
+            r = parseFloat(document.getElementById("r").value);
+            h = parseFloat(document.getElementById("h").value);
+            m = r / R;
+            cx = (r + R) * scale;
+            cy = 0;
+            timer = 0;
+            t = 0;  
+            dt = 2 * Math.PI / 100;
+            x = scale * (R * (m + 1) * Math.cos(m * t) - h * Math.cos((m + 1) * t)); 
+            y = scale * (R * (m + 1) * Math.sin(m * t) - h * Math.sin((m + 1) * t));
+            point_t = 0;
+                
+            Idint = requestAnimationFrame(draw);
+        }
+
+        function stop() {
+            cancelAnimationFrame(Idint);
+        }
+
+        function draw() {
+            if (timer <= 1000) {
+                drawLine();
+                timer += 1;
+                Idint = requestAnimationFrame(draw);
+            } else {
+                cancelAnimationFrame(Idint);
+            }
+        }
+
+        function drawField() {
+            if (gridVisible) {
+                cnv.clearRect(-300, -300, 1200, 1200);  // Очистка большего холста для обновления
+
+                // Вертикальные линии сетки
+                for (let x = -600; x <= 600; x += scale) {
+                    cnv.beginPath();
+                    cnv.moveTo(x, -600);
+                    cnv.lineTo(x, 600);
+                    cnv.strokeStyle = '#ddd';
+                    cnv.stroke();
+                }
+
+                // Горизонтальные линии сетки
+                for (let y = -600; y <= 600; y += scale) {
+                    cnv.beginPath();
+                    cnv.moveTo(-600, y);
+                    cnv.lineTo(600, y);
+                    cnv.strokeStyle = '#ddd';
+                    cnv.stroke();
+                }
+            }
+        }
+
+        function smalCircle() {
+            cnv.beginPath();
+            cnv.arc(cx, cy, r * scale, 0, 2 * Math.PI);
+            cx = (r) * scale * Math.cos(ct) + (R) * scale * Math.cos(ct);
+            cy = (r) * scale * Math.sin(ct) + (R) * scale * Math.sin(ct);
+            cnv.stroke();
+            ct += m * dt;
+            cnv.beginPath();
+            cnv.moveTo(cx, cy);
+            cnv.lineTo(x, y);
+            cnv.stroke();
+        }
+       
+        function drawLine() {
+            cnv.save();
+            cnv.translate(300, 300);  // Сдвиг начала координат в центр холста
+            cnv.clearRect(-300, -300, 600, 600);  // Очистка холста
+            drawField();
+            cnv.lineWidth = 5;  // Установка толщины линии для гипоциклоиды
+            cnv.strokeStyle = '#006633';  // Цвет линии графика (черный)
+            point_t = 0;
+            t += dt;
+            while (point_t != t) {
+                cnv.beginPath();
+                x = R * (m + 1) * Math.cos(m * point_t) - h * Math.cos((m + 1) * point_t);
+                x *= scale;
+                y = R * (m + 1) * Math.sin(m * point_t) - h * Math.sin((m + 1) * point_t);
+                y *= scale;
+                cnv.moveTo(x, y);
+                point_t += dt;
+                x = R * (m + 1) * Math.cos(m * point_t) - h * Math.cos((m + 1) * point_t);
+                x *= scale;
+                y = R * (m + 1) * Math.sin(m * point_t) - h * Math.sin((m + 1) * point_t);
+                y *= scale;
+                cnv.lineTo(x, y);
+                cnv.stroke();
+            }
+            smalCircle();
+            cnv.restore();
+        }
+
+        function toggleGrid() {
+            gridVisible = !gridVisible;
+            drawLine();
+        }
+
+        function zoomIn() {
+            scale *= 1.2;
+            drawLine();
+        }
+
+        function zoomOut() {
+            scale /= 1.2;
+            drawLine();
+        }
+
+        // Отображение сетки при загрузке страницы
+        window.onload = function() {
+            drawField();
+        };
+    </script>
+</body>
+</html>
