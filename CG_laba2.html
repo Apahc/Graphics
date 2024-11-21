@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8"/>
+    <title>Кардиоида с Управлением</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        #scene {
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+
+<body>
+    <form id="controls">
+        <label for="radius">Радиус:</label>
+        <input type="number" id="radius" value="1" step="0.1">
+        <input type="button" onclick="startAnimation()" value="Пуск">
+        <input type="button" onclick="stopAnimation()" value="Стоп">
+        <input type="button" onclick="toggleGrid()" value="Показать/Скрыть Сетку">
+        <input type="button" onclick="zoomIn()" value="Увеличить">
+        <input type="button" onclick="zoomOut()" value="Уменьшить">
+    </form>
+
+    <svg id="scene" height="600" width="1000">
+        <g id="grid" visibility="visible">
+            <!-- Линии сетки будут обновляться с учетом масштаба -->
+        </g>
+        <path id="cardio" fill="none" stroke="#006633" stroke-width="3px" d="" />
+    </svg>
+
+    <script>
+        let radius = 1;
+        let t = 0;
+        let s = "";
+        let intervalId;
+        let scale = 25;  // Масштаб по умолчанию
+        const svgWidth = 1000;
+        const svgHeight = 600;
+
+        function fillFunc(xBeg, yBeg) {
+            let x = (xBeg + scale * (radius * t - radius * Math.sin(t)));
+            let y = (yBeg + scale * (-radius + radius * Math.cos(t)));
+
+            if (t == 0) {
+                s += "M ";
+            } else {
+                s += "L ";
+            }
+            s += x.toString() + ' ' + y.toString() + ' ';
+            t += 0.02;
+            if (t > 8 * Math.PI) {
+                s = "";
+                t = 0;
+            }
+
+            document.getElementById('cardio').setAttribute('d', s);
+        }
+
+        function startAnimation() {
+            radius = parseFloat(document.getElementById('radius').value);
+            if (!intervalId) {
+                intervalId = setInterval(function() {
+                    fillFunc(100, 300); // Начинаем отрисовку с левого края
+                }, 5);
+            }
+        }
+
+        function stopAnimation() {
+            clearInterval(intervalId);
+            intervalId = null;
+        }
+
+        function toggleGrid() {
+            const grid = document.getElementById('grid');
+            grid.setAttribute('visibility', grid.getAttribute('visibility') === 'visible' ? 'hidden' : 'visible');
+        }
+
+        function zoomIn() {
+            scale *= 1.2;
+            redraw();
+        }
+
+        function zoomOut() {
+            scale /= 1.2;
+            redraw();
+        }
+
+        function redraw() {
+            s = "";  // Сброс траектории при изменении масштаба
+            t = 0;   // Сброс времени для перерисовки
+            document.getElementById('cardio').setAttribute('d', s);
+            drawGrid();
+        }
+
+        function drawGrid() {
+            const grid = document.getElementById('grid');
+            grid.innerHTML = '';  // Очищаем текущее содержание сетки
+
+            // Горизонтальные линии сетки
+            for (let i = 0; i <= svgHeight / scale; i++) {
+                const y = i * scale;
+                const line = document.createElementNS("http://www.w3.org/2000/svg", 'line');
+                line.setAttribute('x1', 0);
+                line.setAttribute('y1', y);
+                line.setAttribute('x2', svgWidth);
+                line.setAttribute('y2', y);
+                line.setAttribute('stroke', '#ddd');
+                grid.appendChild(line);
+            }
+
+            // Вертикальные линии сетки
+            for (let i = 0; i <= svgWidth / scale; i++) {
+                const x = i * scale;
+                const line = document.createElementNS("http://www.w3.org/2000/svg", 'line');
+                line.setAttribute('x1', x);
+                line.setAttribute('y1', 0);
+                line.setAttribute('x2', x);
+                line.setAttribute('y2', svgHeight);
+                line.setAttribute('stroke', '#ddd');
+                grid.appendChild(line);
+            }
+        }
+
+        // Первоначальная отрисовка сетки
+        drawGrid();
+        
+    </script>
+</body>
+</html>
